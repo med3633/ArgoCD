@@ -58,6 +58,112 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/depl
 ```bash
 helm upgrade argocd --set configs.params."server\.insecure"=true --set server.ingress.enabled=true --set server.ingress.ingressClassName="nginx" -n argocd argo/argo-cd
 ```
+# create deployement for nginx
+```bash
+vi overlays/kustomization.yaml
+```
+```bash
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: kustomization
+resources:
+  - ../base
+namespace: default
+patches:
+- target:
+    kind: Deployment
+    name: nginx-deployment
+  patch: |-
+    apiVersion: apps/vi
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+    spec:
+      replicas: 2
+```
+## connect to git
+settings > Repository  > connect repo 
+## do Application to argoCD has all instruction of ArgoCD 
+```bash
+mkdir argo-cd
+```
+```bash
+cd argo-cd
+```
+## manifest of ArgoCD (Application because argoCD have Application Controller )
+- nginx.yml
+```bash
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ''
+# say this path do only deployement
+    path: overlays
+# bransh of deploy
+    targetRevision: main
+# any cluster k8s would deploy
+  destination:
+# API srver of target cluster
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+# synchronize any change detect on repo we will apply on cluster k8s auto or manually
+  syncPolicy:
+    automated:
+# rollback if state on cluste updated it not the same on git repo
+      selfHeal: true
+# if dlete manifest on repo  delete this manifest on k8s
+      prune: true
+```
+```bash
+kubectl apply -f nginx.yml
+```
+# change manifest on other branch
+```bash
+git checkout -b feature/decrease-replicas
+```
+
+```bash
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: kustomization
+resources:
+  - ../base
+namespace: default
+patches:
+- target:
+    kind: Deployment
+    name: nginx-deployment
+  patch: |-
+    apiVersion: apps/vi
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+    spec:
+      replicas: 4
+```
+```bash
+git add overlays/kustomization.yaml
+```
+```bash
+git commit -m "Decrease the replicas count"
+```
+```bash
+git push
+```
+# to accelare synch 
+```bash
+argocd app sync nginx
+```
+
+
+
+
+
+
+
 
 
 
