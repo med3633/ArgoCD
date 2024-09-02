@@ -6,6 +6,13 @@ click to see releases of kind
 ```bash
 https://github.com/kubernetes-sigs/kind/releases
 ```
+```bash
+sudo mv kind-linux-amd64 /usr/local/bin/kind
+```
+```bash
+sudo chmod +x /usr/local/bin/kind
+```
+
 # ingress
 ```bash
 kind: cluster
